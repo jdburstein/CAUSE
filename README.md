@@ -10,7 +10,7 @@ npm run start:dev
 ```
 
 The application listens on `http://localhost:3000` by default. Set `PORT` to use a different port.
-Environment variables are loaded from `.env` through Nest's global `ConfigModule`; use `.env.example` as a starting point.
+Environment variables are loaded from `.env` through Nest's global `ConfigModule`; use `.env.example` as a starting point. `NODE_ENV` must be `dev`, `prod`, or `test`, and `PORT` must be a number.
 
 ## Scripts
 
