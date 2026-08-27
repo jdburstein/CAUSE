@@ -5,7 +5,6 @@ NestJS application for the CAUSE AI agent.
 ## Setup
 
 ```bash
-cd cause-ai-agent
 npm install
 npm run start:dev
 ```
