@@ -1,5 +1,14 @@
 import { Type, plainToInstance } from "class-transformer";
-import { IsEnum, IsNumber, Min, Max, validateSync } from "class-validator";
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsUrl,
+  Max,
+  Min,
+  validateSync,
+} from "class-validator";
 
 export enum Environment {
   Development = "dev",
@@ -16,6 +25,13 @@ export class EnvironmentVariables {
   @Min(0)
   @Max(65535)
   PORT = 3000;
+
+  @IsUrl({ require_tld: false })
+  SUPABASE_URL!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  SUPABASE_ANON_KEY!: string;
 }
 
 export function validateEnvironment(
