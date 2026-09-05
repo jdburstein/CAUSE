@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validateEnvironment } from './config/env';
 import { SupabaseModule } from './supabase/supabase.module';
+import { AgentModule } from './agent/agent.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { SupabaseModule } from './supabase/supabase.module';
       validate: validateEnvironment,
     }),
     SupabaseModule,
+    AgentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
