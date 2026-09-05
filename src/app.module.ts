@@ -6,6 +6,7 @@ import { validateEnvironment } from './config/env';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AgentModule } from './agent/agent.module';
 import { ChatModule } from './chat/chat.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ChatModule } from './chat/chat.module';
     SupabaseModule,
     AgentModule,
     ChatModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
