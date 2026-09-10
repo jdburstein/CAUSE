@@ -17,7 +17,8 @@ export const SUPABASE_CLIENT = Symbol('SUPABASE_CLIENT');
       ): SupabaseClient =>
         createClient(
           configService.get('SUPABASE_URL', { infer: true }),
-          configService.get('SUPABASE_ANON_KEY', { infer: true }),
+          configService.get('SUPABASE_SERVICE_ROLE_KEY', { infer: true }),
+          { auth: { persistSession: false, autoRefreshToken: false } },
         ),
     },
   ],
