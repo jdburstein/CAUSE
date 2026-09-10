@@ -9,7 +9,7 @@ const threadId = 'b0000000-0000-4000-8000-000000000001';
 describe('Chat HTTP endpoints', () => {
   let app: INestApplication;
   let base: string;
-  const db = { from: jest.fn() };
+  const db = { from: jest.fn(), channel: jest.fn(), removeChannel: jest.fn().mockResolvedValue('ok') };
 
   function query(table: string, data: unknown, error: unknown = null) {
     const builder: Record<string, jest.Mock> = {};
@@ -153,5 +153,46 @@ describe('Chat HTTP endpoints', () => {
     const response = await fetch(`${base}/chats/${threadId}/messages`);
     expect(response.status).toBe(500);
     expect(await response.text()).not.toContain('sensitive');
+  });
+
+  it('validates SSE IDs before opening a stream', async () => {
+    const invalid = await fetch(`${base}/chats/invalid/events`);
+    expect(invalid.status).toBe(400);
+    query('threads', null);
+    const missing = await fetch(`${base}/chats/${threadId}/events`);
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get('content-type')).toContain('application/json');
+    expect(db.channel).not.toHaveBeenCalled();
+  });
+
+  it('frames SSE events and cleans up when the HTTP client disconnects', async () => {
+    query('threads', { id: threadId });
+    let onInsert: (payload: { new: Record<string, unknown> }) => void;
+    const source: { on: jest.Mock; subscribe: jest.Mock } = {
+      on: jest.fn((_event, _filter, callback) => { onInsert = callback; return source; }),
+      subscribe: jest.fn((callback) => { callback('SUBSCRIBED'); return source; }),
+    };
+    db.channel.mockReturnValueOnce(source);
+    const abort = new AbortController();
+    const response = await fetch(`${base}/chats/${threadId}/events`, { signal: abort.signal });
+    try {
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toContain('text/event-stream');
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let text = '';
+      while (!text.includes('event: ready')) text += decoder.decode((await reader.read()).value);
+      expect(text).toContain(`data: {"thread_id":"${threadId}"}`);
+      onInsert!({ new: { id: 'message-id', thread_id: threadId, role: 'assistant', content: 'Hello', created_at: '2026-09-10T00:00:00Z' } });
+      while (!text.includes('event: message.created')) text += decoder.decode((await reader.read()).value);
+      expect(text).toContain('id: message-id');
+      expect(text).toContain('"content":"Hello"');
+    } finally {
+      abort.abort();
+    }
+    for (let i = 0; i < 20 && db.removeChannel.mock.calls.length === 0; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(db.removeChannel).toHaveBeenCalledWith(source);
   });
 });
