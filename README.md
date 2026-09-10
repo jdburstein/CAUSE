@@ -14,6 +14,21 @@ Environment variables are loaded from `.env` through Nest's global `ConfigModule
 
 The backend requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service-role key bypasses row-level security and must remain server-only. For local development, obtain it from `npx supabase status` and set it in the untracked `.env` file.
 
+## Chats
+
+Routes use the `/api/v1` prefix. These endpoints are for a private internal prototype and do not authenticate callers or enforce chat ownership.
+
+- `POST /api/v1/chats` accepts `{ "user_id": "<uuid>" }`, `{ "external_id": "<identity>" }`, or both. An external identity finds or creates a user; a user UUID must already exist. Both identifiers must match when supplied together. Returns `202` with `{ "thread_id": "<uuid>" }` after creating an empty thread.
+- `GET /api/v1/chats/<thread_id>/messages` returns all message rows in ascending `created_at`, then `id` order. An empty chat returns `[]`; a missing chat returns `404`.
+
+```bash
+curl -X POST http://localhost:3000/api/v1/chats \
+  -H 'Content-Type: application/json' -d '{"external_id":"U123"}'
+curl http://localhost:3000/api/v1/chats/<thread_id>/messages
+```
+
+Invalid input returns `400`, unknown user IDs return `404`, conflicting identities return `409`, and database failures return a sanitized `500`. Creation does not submit a message or start an agent.
+
 ## Scripts
 
 - `npm run build` compiles the application.
