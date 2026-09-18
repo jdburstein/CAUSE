@@ -2,11 +2,13 @@ import 'reflect-metadata';
 import { RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule, ObserveInstrument } from './app.module';
 import { EnvironmentVariables } from './config/env';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    instrument: ObserveInstrument,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
