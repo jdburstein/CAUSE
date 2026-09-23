@@ -1,25 +1,22 @@
 import { ChatOllama } from "@langchain/ollama";
-import { Annotation, MessagesAnnotation, StateGraph, START, END } from "@langchain/langgraph";
+import CareerAdvisorState from "./state";
 import { SystemMessage } from "@langchain/core/messages";
-import { summarizeProfile, StudentProfile, ProfileSummary } from "./helper/profile-summary";
-
-const CareerAdvisorState = Annotation.Root({
-    ...MessagesAnnotation.spec,
-    studentProfile: Annotation<{
-        interests: string[];
-        strengths: string[];
-        preferredIndustries: string[];
-    }>({
-        reducer: (oldProfile: any, newUpdates: any) => ({...oldProfile, ...newUpdates}),
-        default: () => ({ interests: [], strengths: [], preferredIndustries: [] }),
-    }),
-});
+import { summarizeProfile, ProfileSummary } from "./helper/profile-summary";
+import { StateGraph, START, END } from "@langchain/langgraph";
 
 const llm = new ChatOllama({
     model: "llama3.2",
     baseUrl: "http://localhost:11434",
     temperature: 0.6
 });
+
+/* Uncomment once Claude credentiakls are acquired for the project
+const llm = new ChatAnthropic({
+    model: "claude-",
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    temperature: 0.6
+}); 
+*/
 
 const profileExtractionNode = async (state: typeof CareerAdvisorState.State) => {
     const recentMessages = state.messages.slice(-2);
@@ -76,3 +73,12 @@ const counselorNode = async (state: typeof CareerAdvisorState.State) => {
         return { messages: [{ role: "assistant", content: "Sorry I ran into an issure processing this. Please try again!" }] };
    }
 }
+
+const graph = new StateGraph(CareerAdvisorState)
+    .addNode("extract", profileExtractionNode)
+    .addNode("counsel", counselorNode)
+    .addEdge(START, "extract")
+    .addEdge("extract", "counsel")
+    .addEdge("counsel", END);
+
+export const app = graph.compile();
